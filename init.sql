@@ -12,6 +12,20 @@ CREATE TABLE IF NOT EXISTS gifts (
 CREATE TABLE IF NOT EXISTS guests (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
+  phone VARCHAR(20) UNIQUE,
+  document VARCHAR(14) UNIQUE,
+  parent_guest_id INTEGER REFERENCES guests(id) ON DELETE CASCADE,
+  will_attend BOOLEAN,
+  rsvp_updated_at TIMESTAMP,
+  invite_token UUID UNIQUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_guests_parent ON guests(parent_guest_id);
+
+CREATE TABLE IF NOT EXISTS customers (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
   phone VARCHAR(20) UNIQUE NOT NULL,
   document VARCHAR(14) UNIQUE NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
@@ -19,7 +33,7 @@ CREATE TABLE IF NOT EXISTS guests (
 
 CREATE TABLE IF NOT EXISTS orders (
   id SERIAL PRIMARY KEY,
-  guest_id INTEGER NOT NULL REFERENCES guests(id) ON DELETE CASCADE,
+  customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
   guest_message TEXT,
   total DECIMAL(10, 2) NOT NULL,
   payment_method VARCHAR(20) NOT NULL,
@@ -53,7 +67,7 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_gifts_available ON gifts(is_available);
-CREATE INDEX IF NOT EXISTS idx_orders_guest ON orders(guest_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);

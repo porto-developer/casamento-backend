@@ -8,7 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { OrderItem } from './order-item.entity';
-import { Guest } from '../guests/guest.entity';
+import { Customer } from '../customers/customer.entity';
 
 @Entity('orders')
 export class Order {
@@ -16,11 +16,13 @@ export class Order {
   id: number;
 
   @Column({ type: 'int' })
-  guest_id: number;
+  customer_id: number;
 
-  @ManyToOne(() => Guest, (guest) => guest.orders, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'guest_id' })
-  guest: Guest;
+  @ManyToOne(() => Customer, (customer) => customer.orders, {
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
 
   @Column({ type: 'text', nullable: true })
   guest_message: string | null;

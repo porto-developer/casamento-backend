@@ -11,7 +11,7 @@ import { DataSource, Repository, In } from 'typeorm';
 import { Order } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { Gift } from '../gifts/gift.entity';
-import { GuestsService } from '../guests/guests.service';
+import { CustomersService } from '../customers/customers.service';
 import { Payment } from '../payments/payment.entity';
 import {
   PAYMENT_GATEWAY,
@@ -27,14 +27,14 @@ export class OrdersService {
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     private readonly dataSource: DataSource,
-    private readonly guestsService: GuestsService,
+    private readonly customersService: CustomersService,
     private readonly configService: ConfigService,
     @Inject(PAYMENT_GATEWAY)
     private readonly paymentGateway: PaymentGateway,
   ) {}
 
   async create(dto: CreateOrderDto) {
-    const phone = dto.guest_phone.replace(/\D/g, '');
+    const phone = dto.customer_phone.replace(/\D/g, '');
     if (phone.length < 10 || phone.length > 11) {
       throw new BadRequestException('Telefone inválido');
     }
@@ -44,13 +44,13 @@ export class OrdersService {
     await queryRunner.startTransaction();
 
     try {
-      const document = dto.guest_document.replace(/\D/g, '');
+      const document = dto.customer_document.replace(/\D/g, '');
       if (document.length !== 11) {
         throw new BadRequestException('CPF inválido');
       }
 
-      const guest = await this.guestsService.upsert(
-        dto.guest_name,
+      const customer = await this.customersService.upsert(
+        dto.customer_name,
         phone,
         document,
         queryRunner,
@@ -69,7 +69,7 @@ export class OrdersService {
       const unavailable = gifts.filter((g) => !g.is_available);
       if (unavailable.length > 0) {
         throw new ConflictException(
-          'Um ou mais presentes já foram escolhidos por outro convidado',
+          'Um ou mais presentes já foram escolhidos por outra pessoa',
         );
       }
 
@@ -79,7 +79,7 @@ export class OrdersService {
       );
 
       const order = queryRunner.manager.create(Order, {
-        guest_id: guest.id,
+        customer_id: customer.id,
         guest_message: dto.guest_message || null,
         total,
         payment_method: dto.payment_method,
@@ -111,8 +111,8 @@ export class OrdersService {
           orderId: savedOrder.id,
           amount: total,
           description: `Presente de casamento - Pedido #${savedOrder.id}`,
-          customerName: guest.name,
-          customerDocument: guest.document,
+          customerName: customer.name,
+          customerDocument: customer.document,
         });
         paymentResult = {
           providerPaymentId: pixResult.providerPaymentId,
@@ -131,8 +131,8 @@ export class OrdersService {
           orderId: savedOrder.id,
           amount: total,
           description: `Presente de casamento - Pedido #${savedOrder.id}`,
-          customerName: guest.name,
-          customerDocument: guest.document,
+          customerName: customer.name,
+          customerDocument: customer.document,
           creditCard: {
             holderName: dto.credit_card.holder_name,
             number: dto.credit_card.number,
@@ -202,7 +202,7 @@ export class OrdersService {
   async findOne(id: number): Promise<Order | null> {
     return this.orderRepository.findOne({
       where: { id },
-      relations: ['items', 'guest'],
+      relations: ['items', 'customer'],
     });
   }
 }

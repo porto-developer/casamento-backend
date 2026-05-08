@@ -95,17 +95,17 @@ export class CreateOrderDto {
   @ApiProperty({ example: 'João da Silva' })
   @IsString()
   @IsNotEmpty({ message: 'Nome é obrigatório' })
-  guest_name: string;
+  customer_name: string;
 
   @ApiProperty({ example: '11999998888' })
   @IsString()
   @IsNotEmpty({ message: 'Telefone é obrigatório' })
-  guest_phone: string;
+  customer_phone: string;
 
   @ApiProperty({ example: '12345678900' })
   @IsString()
   @IsNotEmpty({ message: 'Documento (CPF) é obrigatório' })
-  guest_document: string;
+  customer_document: string;
 
   @ApiProperty({ example: 'Parabéns aos noivos!', required: false })
   @IsOptional()
