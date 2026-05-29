@@ -1,12 +1,16 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
 import { Guest } from './guest.entity';
 import { SubmitRsvpDto } from './dto/submit-rsvp.dto';
+import { CreateGuestDto } from './dto/create-guest.dto';
+import { CreateDependentDto } from './dto/create-dependent.dto';
+import { UpdateGuestDto } from './dto/update-guest.dto';
+import {
+  parseOptionalBrazilPhone,
+  parseOptionalBrazilCpf,
+} from '../common/utils/brazil-contact.util';
+import { throwIfPostgresUniqueViolation } from '../common/utils/postgres-unique.util';
 
 @Injectable()
 export class GuestsService {
@@ -23,7 +27,7 @@ export class GuestsService {
     }[]
   > {
     const principals = await this.guestRepository.find({
-      where: { parent_guest_id: undefined },
+      where: { parent_guest_id: IsNull() },
       relations: ['children'],
       order: { id: 'ASC' },
     });
@@ -114,6 +118,155 @@ export class GuestsService {
     }
 
     return this.findRsvpGroupByToken(token);
+  }
+
+  async create(dto: CreateGuestDto): Promise<Guest> {
+    const phone = parseOptionalBrazilPhone(dto.phone);
+    const document = parseOptionalBrazilCpf(dto.document);
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    let principalId!: number;
+
+    try {
+      const principal = queryRunner.manager.create(Guest, {
+        name: dto.name.trim(),
+        phone,
+        document,
+        parent_guest_id: null,
+      });
+      const savedPrincipal = await queryRunner.manager.save(principal);
+      principalId = savedPrincipal.id;
+
+      if (dto.dependents?.length) {
+        for (const dep of dto.dependents) {
+          const childPhone = parseOptionalBrazilPhone(dep.phone);
+          const childDoc = parseOptionalBrazilCpf(dep.document);
+          const child = queryRunner.manager.create(Guest, {
+            name: dep.name.trim(),
+            phone: childPhone,
+            document: childDoc,
+            parent_guest_id: principalId,
+          });
+          await queryRunner.manager.save(child);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throwIfPostgresUniqueViolation(
+        err,
+        'Telefone ou documento já cadastrado para outro convidado',
+      );
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+
+    const reloaded = await this.guestRepository.findOne({
+      where: { id: principalId },
+      relations: ['children'],
+    });
+    if (!reloaded) {
+      throw new NotFoundException('Convidado não encontrado após criação');
+    }
+    return reloaded;
+  }
+
+  async createDependent(
+    principalId: number,
+    dto: CreateDependentDto,
+  ): Promise<Guest> {
+    const principal = await this.guestRepository.findOne({
+      where: { id: principalId, parent_guest_id: IsNull() },
+    });
+    if (!principal) {
+      throw new NotFoundException(
+        'Convidado principal não encontrado ou o id não é de um principal',
+      );
+    }
+
+    const phone = parseOptionalBrazilPhone(dto.phone);
+    const document = parseOptionalBrazilCpf(dto.document);
+
+    const child = this.guestRepository.create({
+      name: dto.name.trim(),
+      phone,
+      document,
+      parent_guest_id: principalId,
+    });
+
+    try {
+      return await this.guestRepository.save(child);
+    } catch (err) {
+      throwIfPostgresUniqueViolation(
+        err,
+        'Telefone ou documento já cadastrado para outro convidado',
+      );
+      throw err;
+    }
+  }
+
+  async findOne(id: number): Promise<Guest> {
+    const guest = await this.guestRepository.findOne({
+      where: { id },
+      relations: ['children'],
+    });
+    if (!guest) {
+      throw new NotFoundException('Convidado não encontrado');
+    }
+    if (guest.parent_guest_id != null) {
+      guest.children = [];
+    } else if (guest.children) {
+      guest.children = guest.children.slice().sort((a, b) => a.id - b.id);
+    }
+    return guest;
+  }
+
+  async update(id: number, dto: UpdateGuestDto): Promise<Guest> {
+    const guest = await this.guestRepository.findOne({ where: { id } });
+    if (!guest) {
+      throw new NotFoundException('Convidado não encontrado');
+    }
+
+    if (dto.name !== undefined) {
+      guest.name = dto.name.trim();
+    }
+    if (dto.phone !== undefined) {
+      guest.phone =
+        dto.phone === null || dto.phone === ''
+          ? null
+          : parseOptionalBrazilPhone(dto.phone);
+    }
+    if (dto.document !== undefined) {
+      guest.document =
+        dto.document === null || dto.document === ''
+          ? null
+          : parseOptionalBrazilCpf(dto.document);
+    }
+
+    try {
+      await this.guestRepository.save(guest);
+    } catch (err) {
+      throwIfPostgresUniqueViolation(
+        err,
+        'Telefone ou documento já cadastrado para outro convidado',
+      );
+      throw err;
+    }
+
+    return this.findOne(id);
+  }
+
+  async remove(id: number): Promise<void> {
+    const guest = await this.guestRepository.findOne({ where: { id } });
+    if (!guest) {
+      throw new NotFoundException('Convidado não encontrado');
+    }
+    await this.guestRepository.remove(guest);
   }
 
   async buildGuestListPdfBuffer(): Promise<Buffer> {

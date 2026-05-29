@@ -1,16 +1,23 @@
 import {
   Controller,
   Get,
+  Post,
   Put,
+  Patch,
+  Delete,
   Param,
   Body,
   ParseUUIDPipe,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
 import { StreamableFile } from '@nestjs/common';
 import { GuestsService } from './guests.service';
@@ -21,6 +28,32 @@ import {
 } from './dto/rsvp-group-response.dto';
 import { GuestListGroupDto, GuestListMemberDto } from './dto/guest-list.dto';
 import { Guest } from './guest.entity';
+import { CreateGuestDto } from './dto/create-guest.dto';
+import { CreateDependentDto } from './dto/create-dependent.dto';
+import { UpdateGuestDto } from './dto/update-guest.dto';
+import { GuestCrudResponseDto } from './dto/guest-crud-response.dto';
+
+function guestToCrudRow(guest: Guest): GuestCrudResponseDto {
+  return {
+    id: guest.id,
+    name: guest.name,
+    phone: guest.phone,
+    document: guest.document,
+    parent_guest_id: guest.parent_guest_id,
+    will_attend: guest.will_attend,
+    rsvp_updated_at: guest.rsvp_updated_at,
+    invite_token: guest.invite_token,
+    created_at: guest.created_at,
+  };
+}
+
+function toGuestCrudResponseDto(guest: Guest): GuestCrudResponseDto {
+  const base = guestToCrudRow(guest);
+  if (guest.children?.length) {
+    base.dependents = guest.children.map((c) => guestToCrudRow(c));
+  }
+  return base;
+}
 
 function toRsvpMemberDto(guest: Guest, primaryId: number): RsvpMemberDto {
   return {
@@ -81,6 +114,22 @@ export class GuestsController {
     });
   }
 
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Criar convidado principal',
+    description:
+      'Cria o convidado principal (com token de convite) e opcionalmente subconvidados na mesma requisição.',
+  })
+  @ApiBody({ type: CreateGuestDto })
+  @ApiResponse({ status: 201, type: GuestCrudResponseDto })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 409, description: 'Telefone ou documento duplicado' })
+  async create(@Body() dto: CreateGuestDto): Promise<GuestCrudResponseDto> {
+    const guest = await this.guestsService.create(dto);
+    return toGuestCrudResponseDto(guest);
+  }
+
   @Get('rsvp/:token')
   @ApiOperation({
     summary: 'Consultar grupo do convite (RSVP)',
@@ -138,5 +187,71 @@ export class GuestsController {
       type: 'application/pdf',
       disposition: 'attachment; filename="lista-convidados.pdf"',
     });
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Buscar convidado por id' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, type: GuestCrudResponseDto })
+  @ApiResponse({ status: 404, description: 'Não encontrado' })
+  async findOne(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<GuestCrudResponseDto> {
+    const guest = await this.guestsService.findOne(id);
+    return toGuestCrudResponseDto(guest);
+  }
+
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Atualizar convidado',
+    description:
+      'Atualiza nome, telefone e/ou documento. Telefone ou documento vazios removem o valor.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: UpdateGuestDto })
+  @ApiResponse({ status: 200, type: GuestCrudResponseDto })
+  @ApiResponse({ status: 404, description: 'Não encontrado' })
+  @ApiResponse({ status: 409, description: 'Telefone ou documento duplicado' })
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateGuestDto,
+  ): Promise<GuestCrudResponseDto> {
+    const guest = await this.guestsService.update(id, dto);
+    return toGuestCrudResponseDto(guest);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Remover convidado',
+    description:
+      'Remove o convidado. Se for principal, subconvidados são removidos em cascata.',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 204, description: 'Removido' })
+  @ApiResponse({ status: 404, description: 'Não encontrado' })
+  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.guestsService.remove(id);
+  }
+
+  @Post(':principalId/dependents')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Adicionar subconvidado',
+    description:
+      'Cria um subconvidado vinculado ao convidado principal indicado.',
+  })
+  @ApiParam({ name: 'principalId', type: Number })
+  @ApiBody({ type: CreateDependentDto })
+  @ApiResponse({ status: 201, type: GuestCrudResponseDto })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 404, description: 'Principal não encontrado' })
+  @ApiResponse({ status: 409, description: 'Telefone ou documento duplicado' })
+  async createDependent(
+    @Param('principalId', ParseIntPipe) principalId: number,
+    @Body() dto: CreateDependentDto,
+  ): Promise<GuestCrudResponseDto> {
+    const child = await this.guestsService.createDependent(principalId, dto);
+    return toGuestCrudResponseDto(child);
   }
 }

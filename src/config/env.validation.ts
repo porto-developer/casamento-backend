@@ -1,5 +1,13 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+  ValidateIf,
+  validateSync,
+} from 'class-validator';
 
 export enum PaymentProvider {
   MOCK = 'mock',
@@ -28,8 +36,24 @@ export class EnvironmentVariables {
   @IsEnum(PaymentProvider)
   PAYMENT_PROVIDER: PaymentProvider;
 
+  // Asaas gateway — obrigatórias apenas quando PAYMENT_PROVIDER=asaas
+  @ValidateIf((o) => o.PAYMENT_PROVIDER === PaymentProvider.ASAAS)
+  @IsUrl({ require_tld: true })
+  ASAAS_API_URL: string;
+
+  @ValidateIf((o) => o.PAYMENT_PROVIDER === PaymentProvider.ASAAS)
   @IsString()
-  WEBHOOK_SECRET: string;
+  ASAAS_API_KEY: string;
+
+  @ValidateIf((o) => o.PAYMENT_PROVIDER === PaymentProvider.ASAAS)
+  @IsString()
+  ASAAS_AUTH_TOKEN: string;
+
+  // Origens permitidas no CORS (separadas por vírgula).
+  // Quando ausente, bloqueia todas as origens externas.
+  @IsOptional()
+  @IsString()
+  CORS_ORIGIN?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

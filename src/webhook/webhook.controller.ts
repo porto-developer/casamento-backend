@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { WebhookService } from './webhook.service';
 
 @ApiTags('Webhook')
@@ -8,6 +9,7 @@ export class WebhookController {
   constructor(private readonly webhookService: WebhookService) {}
 
   @Post('payment')
+  @Throttle({ global: { ttl: 60_000, limit: 30 } })
   @ApiOperation({ summary: 'Recebe eventos de pagamento do gateway' })
   @ApiResponse({ status: 200, description: 'Webhook processado' })
   @ApiResponse({ status: 400, description: 'Payload ou assinatura inválidos' })

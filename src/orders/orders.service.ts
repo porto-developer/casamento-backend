@@ -18,6 +18,10 @@ import {
   PaymentGateway,
 } from '../payments/gateways/payment-gateway.interface';
 import { CreateOrderDto, PaymentMethodEnum } from './dto/create-order.dto';
+import {
+  parseRequiredBrazilPhone,
+  parseRequiredBrazilCpf,
+} from '../common/utils/brazil-contact.util';
 
 @Injectable()
 export class OrdersService {
@@ -34,20 +38,14 @@ export class OrdersService {
   ) {}
 
   async create(dto: CreateOrderDto) {
-    const phone = dto.customer_phone.replace(/\D/g, '');
-    if (phone.length < 10 || phone.length > 11) {
-      throw new BadRequestException('Telefone inválido');
-    }
+    const phone = parseRequiredBrazilPhone(dto.customer_phone);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const document = dto.customer_document.replace(/\D/g, '');
-      if (document.length !== 11) {
-        throw new BadRequestException('CPF inválido');
-      }
+      const document = parseRequiredBrazilCpf(dto.customer_document);
 
       const customer = await this.customersService.upsert(
         dto.customer_name,

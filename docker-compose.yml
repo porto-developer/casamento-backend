@@ -3,18 +3,12 @@ services:
     build: .
     ports:
       - "3001:3001"
+    env_file:
+      - .env
     environment:
+      # Sobrescreve DATABASE_HOST para usar o nome do serviço interno
       DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres
-      DATABASE_NAME: wedding_gifts
-      PORT: 3001
-      PAYMENT_PROVIDER: asaas
-      WEBHOOK_SECRET: change-me-in-production
-      ASAAS_API_KEY: "$$aact_hmlg_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OjYwYzEzZDQ5LTA4MDktNGYxMi04NWFkLTE2N2Q0OGE5MDVlNTo6JGFhY2hfMDM2MjJhMWItY2UxOS00YjkwLWE1ZDAtZjcwYjBkNTE1ZjBh"
-      ASAAS_AUTH_TOKEN: whsec_JHJLAUa7s5iG4XoKbJmUZg6gKWKm_z_AzvbIiCoPJWs
-      ASAAS_API_URL: https://api-sandbox.asaas.com/v3
+      NODE_ENV: production
     depends_on:
       postgres:
         condition: service_healthy
