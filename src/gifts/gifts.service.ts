@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Gift } from './gift.entity';
 import { CreateGiftDto } from './dto/create-gift.dto';
+import { UpdateGiftDto } from './dto/update-gift.dto';
 import { StorageService } from '../storage/storage.service';
 
 @Injectable()
@@ -49,6 +50,22 @@ export class GiftsService {
       image_url,
       is_available: dto.is_available ?? true,
     });
+
+    return this.giftRepository.save(gift);
+  }
+
+  async update(
+    id: number,
+    dto: UpdateGiftDto,
+    image?: Express.Multer.File,
+  ): Promise<Gift> {
+    const gift = await this.findOne(id);
+
+    if (image) {
+      gift.image_url = await this.storageService.uploadFile(image);
+    }
+
+    Object.assign(gift, dto);
 
     return this.giftRepository.save(gift);
   }

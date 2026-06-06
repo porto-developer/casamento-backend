@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Body,
   ParseIntPipe,
@@ -21,6 +22,7 @@ import {
 import { GiftsService } from './gifts.service';
 import { GiftResponseDto } from './dto/gift-response.dto';
 import { CreateGiftDto } from './dto/create-gift.dto';
+import { UpdateGiftDto } from './dto/update-gift.dto';
 
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -85,5 +87,46 @@ export class GiftsController {
     @UploadedFile() image?: Express.Multer.File,
   ) {
     return this.giftsService.create(dto, image);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Atualiza um presente' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Jogo de Panelas' },
+        description: { type: 'string', example: 'Jogo com 5 peças' },
+        price: { type: 'number', example: 299.9 },
+        category: { type: 'string', example: 'Cozinha' },
+        is_available: { type: 'boolean', example: true },
+        image: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, type: GiftResponseDto })
+  @ApiResponse({ status: 404, description: 'Presente não encontrado' })
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: IMAGE_MAX_SIZE },
+      fileFilter: (_req, file, cb) => {
+        if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+          return cb(
+            new BadRequestException('Formato inválido. Use JPEG, PNG ou WebP.'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateGiftDto,
+    @UploadedFile() image?: Express.Multer.File,
+  ) {
+    return this.giftsService.update(id, dto, image);
   }
 }
