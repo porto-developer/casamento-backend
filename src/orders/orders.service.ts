@@ -38,17 +38,17 @@ export class OrdersService {
   ) {}
 
   async create(dto: CreateOrderDto) {
-    const phone = parseRequiredBrazilPhone(dto.customer_phone);
+    const phone = parseRequiredBrazilPhone(dto.guest_phone);
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const document = parseRequiredBrazilCpf(dto.customer_document);
+      const document = parseRequiredBrazilCpf(dto.guest_document);
 
       const customer = await this.customersService.upsert(
-        dto.customer_name,
+        dto.guest_name,
         phone,
         document,
         queryRunner,

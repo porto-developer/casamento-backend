@@ -330,7 +330,7 @@
       "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"customer_name\": \"João da Silva\",\n  \"customer_phone\": \"11999998888\",\n  \"customer_document\": \"12345678900\",\n  \"guest_message\": \"Parabéns aos noivos!\",\n  \"payment_method\": \"pix\",\n  \"items\": [\n    {\n      \"gift_id\": 1,\n      \"gift_name\": \"Jogo de Panelas\",\n      \"gift_price\": 299.90\n    }\n  ]\n}"
+        "text": "{\n  \"guest_name\": \"João da Silva\",\n  \"guest_phone\": \"11999998888\",\n  \"guest_document\": \"12345678900\",\n  \"guest_message\": \"Parabéns aos noivos!\",\n  \"payment_method\": \"pix\",\n  \"items\": [\n    {\n      \"gift_id\": 1,\n      \"gift_name\": \"Jogo de Panelas\",\n      \"gift_price\": 299.90\n    }\n  ]\n}"
       }
     },
     {
@@ -344,7 +344,7 @@
       "headers": [{ "name": "Content-Type", "value": "application/json" }],
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"customer_name\": \"João da Silva\",\n  \"customer_phone\": \"11999998888\",\n  \"customer_document\": \"12345678900\",\n  \"guest_message\": \"Parabéns aos noivos!\",\n  \"payment_method\": \"credit_card\",\n  \"remote_ip\": \"116.213.42.53\",\n  \"items\": [\n    {\n      \"gift_id\": 2,\n      \"gift_name\": \"Jogo de Taças\",\n      \"gift_price\": 149.90\n    }\n  ],\n  \"credit_card\": {\n    \"holder_name\": \"JOAO DA SILVA\",\n    \"number\": \"4111111111111111\",\n    \"expiry_month\": \"12\",\n    \"expiry_year\": \"2028\",\n    \"ccv\": \"123\"\n  },\n  \"credit_card_holder_info\": {\n    \"name\": \"João da Silva\",\n    \"email\": \"joao@email.com\",\n    \"cpf_cnpj\": \"12345678900\",\n    \"postal_code\": \"01310-100\",\n    \"address_number\": \"100\",\n    \"phone\": \"11999998888\"\n  }\n}"
+        "text": "{\n  \"guest_name\": \"João da Silva\",\n  \"guest_phone\": \"11999998888\",\n  \"guest_document\": \"12345678900\",\n  \"guest_message\": \"Parabéns aos noivos!\",\n  \"payment_method\": \"credit_card\",\n  \"remote_ip\": \"116.213.42.53\",\n  \"items\": [\n    {\n      \"gift_id\": 2,\n      \"gift_name\": \"Jogo de Taças\",\n      \"gift_price\": 149.90\n    }\n  ],\n  \"credit_card\": {\n    \"holder_name\": \"JOAO DA SILVA\",\n    \"number\": \"4111111111111111\",\n    \"expiry_month\": \"12\",\n    \"expiry_year\": \"2028\",\n    \"ccv\": \"123\"\n  },\n  \"credit_card_holder_info\": {\n    \"name\": \"João da Silva\",\n    \"email\": \"joao@email.com\",\n    \"cpf_cnpj\": \"12345678900\",\n    \"postal_code\": \"01310-100\",\n    \"address_number\": \"100\",\n    \"phone\": \"11999998888\"\n  }\n}"
       }
     },
 
