@@ -15,17 +15,19 @@ export class GiftsService {
   ) {}
 
   async findAll(): Promise<Gift[]> {
-    const gifts = await this.giftRepository.find({
-      order: { category: 'ASC', name: 'ASC' },
-    });
+    const gifts = await this.giftRepository
+      .createQueryBuilder('gift')
+      .orderBy('RANDOM()')
+      .getMany();
     return Promise.all(gifts.map((g) => this.resolveImageUrl(g)));
   }
 
   async findAvailable(): Promise<Gift[]> {
-    const gifts = await this.giftRepository.find({
-      where: { is_available: true },
-      order: { category: 'ASC', name: 'ASC' },
-    });
+    const gifts = await this.giftRepository
+      .createQueryBuilder('gift')
+      .where('gift.is_available = :available', { available: true })
+      .orderBy('RANDOM()')
+      .getMany();
     return Promise.all(gifts.map((g) => this.resolveImageUrl(g)));
   }
 
