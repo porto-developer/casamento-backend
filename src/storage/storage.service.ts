@@ -1,6 +1,10 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 
@@ -52,5 +56,21 @@ export class StorageService {
 
     const base = this.endpointUrl.replace(/\/$/, '');
     return `${base}/${this.bucketName}/${key}`;
+  }
+
+  async deleteFile(url: string): Promise<void> {
+    // Extrai a key removendo o prefixo "endpoint/bucket/"
+    const prefix = `${this.endpointUrl.replace(/\/$/, '')}/${this.bucketName}/`;
+    const key = url.startsWith(prefix) ? url.slice(prefix.length) : null;
+
+    if (!key) return;
+
+    try {
+      await this.s3.send(
+        new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }),
+      );
+    } catch (err) {
+      console.error(`Falha ao remover imagem do bucket: ${(err as Error).message}`);
+    }
   }
 }

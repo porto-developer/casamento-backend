@@ -3,12 +3,15 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   ParseIntPipe,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -128,5 +131,14 @@ export class GiftsController {
     @UploadedFile() image?: Express.Multer.File,
   ) {
     return this.giftsService.update(id, dto, image);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Remove um presente' })
+  @ApiResponse({ status: 204, description: 'Presente removido com sucesso' })
+  @ApiResponse({ status: 404, description: 'Presente não encontrado' })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.giftsService.remove(id);
   }
 }

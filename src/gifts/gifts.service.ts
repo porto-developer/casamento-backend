@@ -54,6 +54,16 @@ export class GiftsService {
     return this.giftRepository.save(gift);
   }
 
+  async remove(id: number): Promise<void> {
+    const gift = await this.findOne(id);
+
+    if (gift.image_url) {
+      await this.storageService.deleteFile(gift.image_url);
+    }
+
+    await this.giftRepository.remove(gift);
+  }
+
   async update(
     id: number,
     dto: UpdateGiftDto,
@@ -62,6 +72,9 @@ export class GiftsService {
     const gift = await this.findOne(id);
 
     if (image) {
+      if (gift.image_url) {
+        await this.storageService.deleteFile(gift.image_url);
+      }
       gift.image_url = await this.storageService.uploadFile(image);
     }
 
