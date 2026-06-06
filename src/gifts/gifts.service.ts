@@ -2,12 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Gift } from './gift.entity';
+import { CreateGiftDto } from './dto/create-gift.dto';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class GiftsService {
   constructor(
     @InjectRepository(Gift)
     private readonly giftRepository: Repository<Gift>,
+    private readonly storageService: StorageService,
   ) {}
 
   async findAll(): Promise<Gift[]> {
@@ -29,5 +32,24 @@ export class GiftsService {
       throw new NotFoundException(`Presente com ID ${id} não encontrado`);
     }
     return gift;
+  }
+
+  async create(
+    dto: CreateGiftDto,
+    image?: Express.Multer.File,
+  ): Promise<Gift> {
+    let image_url: string | null = null;
+
+    if (image) {
+      image_url = await this.storageService.uploadFile(image);
+    }
+
+    const gift = this.giftRepository.create({
+      ...dto,
+      image_url,
+      is_available: dto.is_available ?? true,
+    });
+
+    return this.giftRepository.save(gift);
   }
 }

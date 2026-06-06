@@ -54,6 +54,22 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   CORS_ORIGIN?: string;
+
+  // S3-compatible storage (Railway / Tigris)
+  @IsString()
+  AWS_ENDPOINT_URL: string;
+
+  @IsString()
+  AWS_S3_BUCKET_NAME: string;
+
+  @IsString()
+  AWS_DEFAULT_REGION: string;
+
+  @IsString()
+  AWS_ACCESS_KEY_ID: string;
+
+  @IsString()
+  AWS_SECRET_ACCESS_KEY: string;
 }
 
 export function validate(config: Record<string, unknown>) {
