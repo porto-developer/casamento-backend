@@ -1,0 +1,407 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-06-06T00:00:00.000Z",
+  "__export_source": "casamento-backend",
+  "resources": [
+    {
+      "_type": "workspace",
+      "_id": "wrk_casamento",
+      "parentId": null,
+      "name": "Casamento Backend",
+      "description": "API do backend de casamento"
+    },
+    {
+      "_type": "environment",
+      "_id": "env_base",
+      "parentId": "wrk_casamento",
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:3001"
+      }
+    },
+    {
+      "_type": "environment",
+      "_id": "env_prod",
+      "parentId": "wrk_casamento",
+      "name": "Prod",
+      "data": {
+        "base_url": "https://casamento-backend-production-7bb0.up.railway.app"
+      }
+    },
+
+    {
+      "_type": "request_group",
+      "_id": "fld_health",
+      "parentId": "wrk_casamento",
+      "name": "Health"
+    },
+    {
+      "_type": "request",
+      "_id": "req_health_check",
+      "parentId": "fld_health",
+      "name": "Health check",
+      "method": "GET",
+      "url": "{{ base_url }}/health",
+      "description": "Verifica se a API e o banco de dados estão operacionais.",
+      "headers": [],
+      "body": {}
+    },
+
+    {
+      "_type": "request_group",
+      "_id": "fld_gifts",
+      "parentId": "wrk_casamento",
+      "name": "Gifts"
+    },
+    {
+      "_type": "request",
+      "_id": "req_gifts_list",
+      "parentId": "fld_gifts",
+      "name": "Listar presentes",
+      "method": "GET",
+      "url": "{{ base_url }}/api/gifts",
+      "description": "Retorna todos os presentes cadastrados.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_gifts_get",
+      "parentId": "fld_gifts",
+      "name": "Detalhe de um presente",
+      "method": "GET",
+      "url": "{{ base_url }}/api/gifts/1",
+      "description": "Retorna os dados de um presente específico.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_gifts_create",
+      "parentId": "fld_gifts",
+      "name": "Criar presente",
+      "method": "POST",
+      "url": "{{ base_url }}/api/gifts",
+      "description": "Cria um novo presente. Aceita multipart/form-data com imagem opcional (JPEG, PNG ou WebP, máx 5 MB).",
+      "headers": [],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          { "name": "name",         "value": "Jogo de Panelas",              "type": "text" },
+          { "name": "description",  "value": "Jogo com 5 peças antiaderentes","type": "text" },
+          { "name": "price",        "value": "299.90",                        "type": "text" },
+          { "name": "category",     "value": "Cozinha",                       "type": "text" },
+          { "name": "is_available", "value": "true",                          "type": "text" },
+          { "name": "image",        "value": "",                              "type": "file", "fileName": "" }
+        ]
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_gifts_update",
+      "parentId": "fld_gifts",
+      "name": "Atualizar presente",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/gifts/1",
+      "description": "Atualiza parcialmente um presente. Enviar nova imagem substitui a anterior no bucket.",
+      "headers": [],
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          { "name": "price",        "value": "349.90", "type": "text" },
+          { "name": "is_available", "value": "true",   "type": "text" },
+          { "name": "image",        "value": "",       "type": "file", "fileName": "" }
+        ]
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_gifts_delete",
+      "parentId": "fld_gifts",
+      "name": "Excluir presente",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/gifts/1",
+      "description": "Remove o presente e exclui a imagem do bucket S3. Retorna 204.",
+      "headers": [],
+      "body": {}
+    },
+
+    {
+      "_type": "request_group",
+      "_id": "fld_guests",
+      "parentId": "wrk_casamento",
+      "name": "Guests"
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_list",
+      "parentId": "fld_guests",
+      "name": "Listar convidados",
+      "method": "GET",
+      "url": "{{ base_url }}/api/guests",
+      "description": "Convidados principais agrupados com dependentes e contagem de confirmações.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_create",
+      "parentId": "fld_guests",
+      "name": "Criar convidado principal",
+      "method": "POST",
+      "url": "{{ base_url }}/api/guests",
+      "description": "Cria um convidado principal com dependentes opcionais.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"João Silva\",\n  \"phone\": \"11999998888\",\n  \"document\": \"12345678900\",\n  \"dependents\": [\n    {\n      \"name\": \"Maria Silva\",\n      \"phone\": \"11988887777\"\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_get",
+      "parentId": "fld_guests",
+      "name": "Detalhe de convidado",
+      "method": "GET",
+      "url": "{{ base_url }}/api/guests/1",
+      "description": "Retorna o convidado com seus dependentes (se for principal).",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_update",
+      "parentId": "fld_guests",
+      "name": "Atualizar convidado",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/guests/1",
+      "description": "Atualiza parcialmente os dados de um convidado.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"phone\": \"11977776666\"\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_delete",
+      "parentId": "fld_guests",
+      "name": "Excluir convidado",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/guests/1",
+      "description": "Remove o convidado. Se for principal, cascata nos dependentes. Retorna 204.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_rsvp_get",
+      "parentId": "fld_guests",
+      "name": "Buscar grupo de RSVP (token)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/guests/rsvp/550e8400-e29b-41d4-a716-446655440000",
+      "description": "Retorna o grupo de convite pelo token UUID para confirmação de presença.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_rsvp_put",
+      "parentId": "fld_guests",
+      "name": "Confirmar RSVP (token)",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/guests/rsvp/550e8400-e29b-41d4-a716-446655440000",
+      "description": "Envia confirmação de presença para todos os membros do grupo de convite.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"attendees\": [\n    { \"guest_id\": 1, \"will_attend\": true },\n    { \"guest_id\": 2, \"will_attend\": false }\n  ]\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_pdf",
+      "parentId": "fld_guests",
+      "name": "Exportar lista de convidados (PDF)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/guests/export/pdf",
+      "description": "Retorna um PDF com a lista completa de convidados.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_guests_dependent",
+      "parentId": "fld_guests",
+      "name": "Adicionar dependente",
+      "method": "POST",
+      "url": "{{ base_url }}/api/guests/1/dependents",
+      "description": "Cria um dependente vinculado ao convidado principal.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Pedro Silva\",\n  \"phone\": \"11966665555\",\n  \"document\": \"98765432100\"\n}"
+      }
+    },
+
+    {
+      "_type": "request_group",
+      "_id": "fld_messages",
+      "parentId": "wrk_casamento",
+      "name": "Messages"
+    },
+    {
+      "_type": "request",
+      "_id": "req_messages_create",
+      "parentId": "fld_messages",
+      "name": "Criar mensagem",
+      "method": "POST",
+      "url": "{{ base_url }}/api/messages",
+      "description": "Registra uma mensagem no mural de recados.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"João Silva\",\n  \"message\": \"Parabéns aos noivos! Que a vida de vocês seja repleta de amor e alegria!\"\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_messages_list",
+      "parentId": "fld_messages",
+      "name": "Listar mensagens",
+      "method": "GET",
+      "url": "{{ base_url }}/api/messages",
+      "description": "Retorna todas as mensagens do mural.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_messages_get",
+      "parentId": "fld_messages",
+      "name": "Detalhe de mensagem",
+      "method": "GET",
+      "url": "{{ base_url }}/api/messages/1",
+      "description": "Retorna uma mensagem específica.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_messages_update",
+      "parentId": "fld_messages",
+      "name": "Atualizar mensagem",
+      "method": "PATCH",
+      "url": "{{ base_url }}/api/messages/1",
+      "description": "Atualiza parcialmente uma mensagem.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"message\": \"Parabéns! Que sejam muito felizes!\"\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_messages_delete",
+      "parentId": "fld_messages",
+      "name": "Excluir mensagem",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/messages/1",
+      "description": "Remove uma mensagem. Retorna 204.",
+      "headers": [],
+      "body": {}
+    },
+
+    {
+      "_type": "request_group",
+      "_id": "fld_orders",
+      "parentId": "wrk_casamento",
+      "name": "Orders"
+    },
+    {
+      "_type": "request",
+      "_id": "req_orders_create_pix",
+      "parentId": "fld_orders",
+      "name": "Criar pedido (PIX)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/orders",
+      "description": "Cria um pedido com pagamento via PIX.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customer_name\": \"João da Silva\",\n  \"customer_phone\": \"11999998888\",\n  \"customer_document\": \"12345678900\",\n  \"guest_message\": \"Parabéns aos noivos!\",\n  \"payment_method\": \"pix\",\n  \"items\": [\n    {\n      \"gift_id\": 1,\n      \"gift_name\": \"Jogo de Panelas\",\n      \"gift_price\": 299.90\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_orders_create_card",
+      "parentId": "fld_orders",
+      "name": "Criar pedido (Cartão de crédito)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/orders",
+      "description": "Cria um pedido com pagamento via cartão de crédito.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customer_name\": \"João da Silva\",\n  \"customer_phone\": \"11999998888\",\n  \"customer_document\": \"12345678900\",\n  \"guest_message\": \"Parabéns aos noivos!\",\n  \"payment_method\": \"credit_card\",\n  \"remote_ip\": \"116.213.42.53\",\n  \"items\": [\n    {\n      \"gift_id\": 2,\n      \"gift_name\": \"Jogo de Taças\",\n      \"gift_price\": 149.90\n    }\n  ],\n  \"credit_card\": {\n    \"holder_name\": \"JOAO DA SILVA\",\n    \"number\": \"4111111111111111\",\n    \"expiry_month\": \"12\",\n    \"expiry_year\": \"2028\",\n    \"ccv\": \"123\"\n  },\n  \"credit_card_holder_info\": {\n    \"name\": \"João da Silva\",\n    \"email\": \"joao@email.com\",\n    \"cpf_cnpj\": \"12345678900\",\n    \"postal_code\": \"01310-100\",\n    \"address_number\": \"100\",\n    \"phone\": \"11999998888\"\n  }\n}"
+      }
+    },
+
+    {
+      "_type": "request_group",
+      "_id": "fld_payments",
+      "parentId": "wrk_casamento",
+      "name": "Payments"
+    },
+    {
+      "_type": "request",
+      "_id": "req_payments_get",
+      "parentId": "fld_payments",
+      "name": "Status do pagamento",
+      "method": "GET",
+      "url": "{{ base_url }}/api/payments/1",
+      "description": "Retorna o status do pagamento de um pedido.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_payments_confirm",
+      "parentId": "fld_payments",
+      "name": "Confirmar pagamento (fallback manual)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/payments/1/confirm",
+      "description": "Confirmação manual de pagamento como fallback.",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"payment_method\": \"pix\",\n  \"card_last_four\": null,\n  \"installments\": 1\n}"
+      }
+    },
+
+    {
+      "_type": "request_group",
+      "_id": "fld_webhook",
+      "parentId": "wrk_casamento",
+      "name": "Webhook"
+    },
+    {
+      "_type": "request",
+      "_id": "req_webhook_payment",
+      "parentId": "fld_webhook",
+      "name": "Webhook de pagamento (gateway)",
+      "method": "POST",
+      "url": "{{ base_url }}/api/webhook/payment",
+      "description": "Recebe notificações do gateway de pagamento (Asaas). Autenticação via header asaas-access-token ou x-webhook-signature.",
+      "headers": [
+        { "name": "Content-Type",        "value": "application/json" },
+        { "name": "asaas-access-token",  "value": "SEU_TOKEN_AQUI" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"event\": \"PAYMENT_RECEIVED\",\n  \"payment\": {\n    \"id\": \"pay_abc123\",\n    \"status\": \"CONFIRMED\",\n    \"value\": 299.90,\n    \"externalReference\": \"1\"\n  }\n}"
+      }
+    }
+  ]
+}

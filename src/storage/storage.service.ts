@@ -4,7 +4,9 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { extname } from 'path';
 
@@ -54,16 +56,28 @@ export class StorageService {
       );
     }
 
-    const base = this.endpointUrl.replace(/\/$/, '');
-    return `${base}/${this.bucketName}/${key}`;
+    return key;
   }
 
-  async deleteFile(url: string): Promise<void> {
-    // Extrai a key removendo o prefixo "endpoint/bucket/"
-    const prefix = `${this.endpointUrl.replace(/\/$/, '')}/${this.bucketName}/`;
-    const key = url.startsWith(prefix) ? url.slice(prefix.length) : null;
+  async getPresignedUrl(key: string, expiresIn = 3600): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+    });
+    return getSignedUrl(this.s3, command, { expiresIn });
+  }
 
-    if (!key) return;
+  /**
+   * Accepts either a bare key ("gifts/uuid.jpg") or the old full URL format
+   * ("https://storage.railway.app/bucket/gifts/uuid.jpg") for backwards compatibility.
+   */
+  private extractKey(keyOrUrl: string): string {
+    const prefix = `${this.endpointUrl.replace(/\/$/, '')}/${this.bucketName}/`;
+    return keyOrUrl.startsWith(prefix) ? keyOrUrl.slice(prefix.length) : keyOrUrl;
+  }
+
+  async deleteFile(keyOrUrl: string): Promise<void> {
+    const key = this.extractKey(keyOrUrl);
 
     try {
       await this.s3.send(

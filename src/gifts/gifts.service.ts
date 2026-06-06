@@ -15,16 +15,18 @@ export class GiftsService {
   ) {}
 
   async findAll(): Promise<Gift[]> {
-    return this.giftRepository.find({
+    const gifts = await this.giftRepository.find({
       order: { category: 'ASC', name: 'ASC' },
     });
+    return Promise.all(gifts.map((g) => this.resolveImageUrl(g)));
   }
 
   async findAvailable(): Promise<Gift[]> {
-    return this.giftRepository.find({
+    const gifts = await this.giftRepository.find({
       where: { is_available: true },
       order: { category: 'ASC', name: 'ASC' },
     });
+    return Promise.all(gifts.map((g) => this.resolveImageUrl(g)));
   }
 
   async findOne(id: number): Promise<Gift> {
@@ -32,7 +34,7 @@ export class GiftsService {
     if (!gift) {
       throw new NotFoundException(`Presente com ID ${id} não encontrado`);
     }
-    return gift;
+    return this.resolveImageUrl(gift);
   }
 
   async create(
@@ -51,11 +53,15 @@ export class GiftsService {
       is_available: dto.is_available ?? true,
     });
 
-    return this.giftRepository.save(gift);
+    const saved = await this.giftRepository.save(gift);
+    return this.resolveImageUrl(saved);
   }
 
   async remove(id: number): Promise<void> {
-    const gift = await this.findOne(id);
+    const gift = await this.giftRepository.findOne({ where: { id } });
+    if (!gift) {
+      throw new NotFoundException(`Presente com ID ${id} não encontrado`);
+    }
 
     if (gift.image_url) {
       await this.storageService.deleteFile(gift.image_url);
@@ -69,7 +75,10 @@ export class GiftsService {
     dto: UpdateGiftDto,
     image?: Express.Multer.File,
   ): Promise<Gift> {
-    const gift = await this.findOne(id);
+    const gift = await this.giftRepository.findOne({ where: { id } });
+    if (!gift) {
+      throw new NotFoundException(`Presente com ID ${id} não encontrado`);
+    }
 
     if (image) {
       if (gift.image_url) {
@@ -80,6 +89,17 @@ export class GiftsService {
 
     Object.assign(gift, dto);
 
-    return this.giftRepository.save(gift);
+    const saved = await this.giftRepository.save(gift);
+    return this.resolveImageUrl(saved);
+  }
+
+  /**
+   * Returns a shallow copy of the gift with image_url replaced by a
+   * temporary presigned URL (1 hour TTL). The raw key is kept in the DB.
+   */
+  private async resolveImageUrl(gift: Gift): Promise<Gift> {
+    if (!gift.image_url) return gift;
+    const presigned = await this.storageService.getPresignedUrl(gift.image_url);
+    return { ...gift, image_url: presigned };
   }
 }
