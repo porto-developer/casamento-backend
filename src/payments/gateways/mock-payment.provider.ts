@@ -6,6 +6,7 @@ import {
   CreateCardPaymentData,
   PixPaymentResult,
   CardPaymentResult,
+  PaymentStatusResult,
   WebhookEvent,
 } from './payment-gateway.interface';
 
@@ -37,6 +38,11 @@ export class MockPaymentProvider implements PaymentGateway {
       providerPaymentId: `mock_card_${uuidv4()}`,
       status: 'processing',
     };
+  }
+
+  async checkPaymentStatus(_providerPaymentId: string): Promise<PaymentStatusResult> {
+    this.logger.log(`[MOCK] checkPaymentStatus — always returns approved`);
+    return { status: 'approved' };
   }
 
   verifyWebhookSignature(_payload: unknown, _signature: string): boolean {

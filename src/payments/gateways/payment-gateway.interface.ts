@@ -54,9 +54,14 @@ export interface WebhookEvent {
 
 export const PAYMENT_GATEWAY = 'PAYMENT_GATEWAY';
 
+export interface PaymentStatusResult {
+  status: 'approved' | 'pending' | 'failed';
+}
+
 export interface PaymentGateway {
   createPixPayment(data: CreatePixPaymentData): Promise<PixPaymentResult>;
   createCardPayment(data: CreateCardPaymentData): Promise<CardPaymentResult>;
+  checkPaymentStatus(providerPaymentId: string): Promise<PaymentStatusResult>;
   verifyWebhookSignature(payload: unknown, signature: string): boolean;
   parseWebhookEvent(payload: unknown): WebhookEvent;
 }

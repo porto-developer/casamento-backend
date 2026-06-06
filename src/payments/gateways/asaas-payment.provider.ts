@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadGatewayException } from '@nestjs/common';
 import {
   PaymentGateway,
   CreatePixPaymentData,
   CreateCardPaymentData,
   PixPaymentResult,
   CardPaymentResult,
+  PaymentStatusResult,
   WebhookEvent,
 } from './payment-gateway.interface';
 
@@ -61,7 +62,16 @@ export class AsaasPaymentProvider implements PaymentGateway {
     if (!response.ok) {
       const errorBody = await response.text();
       this.logger.error(`Asaas API error [${response.status}]: ${errorBody}`);
-      throw new Error(`Asaas API error: ${response.status} - ${errorBody}`);
+
+      let userMessage = 'Erro ao processar pagamento. Tente novamente.';
+      try {
+        const parsed = JSON.parse(errorBody) as { errors?: { description: string }[] };
+        if (parsed.errors?.[0]?.description) {
+          userMessage = parsed.errors[0].description;
+        }
+      } catch {}
+
+      throw new BadGatewayException(userMessage);
     }
 
     return response.json() as Promise<T>;
@@ -180,6 +190,17 @@ export class AsaasPaymentProvider implements PaymentGateway {
       providerPaymentId: payment.id,
       status: statusMap[payment.status] || 'processing',
     };
+  }
+
+  async checkPaymentStatus(providerPaymentId: string): Promise<PaymentStatusResult> {
+    const payment = await this.request<AsaasPaymentResponse>('GET', `/payments/${providerPaymentId}`);
+
+    const approvedStatuses = ['CONFIRMED', 'RECEIVED'];
+    const failedStatuses = ['OVERDUE', 'REFUNDED', 'CHARGEBACK_REQUESTED', 'CHARGEBACK_DISPUTE', 'AWAITING_CHARGEBACK_REVERSAL', 'DUNNING_REQUESTED', 'DUNNING_RECEIVED', 'REFUND_REQUESTED'];
+
+    if (approvedStatuses.includes(payment.status)) return { status: 'approved' };
+    if (failedStatuses.includes(payment.status)) return { status: 'failed' };
+    return { status: 'pending' };
   }
 
   verifyWebhookSignature(_payload: unknown, token: string): boolean {

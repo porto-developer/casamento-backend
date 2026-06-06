@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, In } from 'typeorm';
@@ -10,6 +11,10 @@ import { Payment } from './payment.entity';
 import { Order } from '../orders/order.entity';
 import { OrderItem } from '../orders/order-item.entity';
 import { Gift } from '../gifts/gift.entity';
+import {
+  PAYMENT_GATEWAY,
+  PaymentGateway,
+} from './gateways/payment-gateway.interface';
 
 @Injectable()
 export class PaymentsService {
@@ -19,6 +24,8 @@ export class PaymentsService {
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
     private readonly dataSource: DataSource,
+    @Inject(PAYMENT_GATEWAY)
+    private readonly paymentGateway: PaymentGateway,
   ) {}
 
   async findByOrderId(orderId: number): Promise<Payment> {
@@ -34,6 +41,44 @@ export class PaymentsService {
 
   async confirmPayment(
     orderId: number,
+    cardLastFour?: string,
+    installments?: number,
+  ) {
+    const payment = await this.paymentRepository.findOne({
+      where: { order_id: orderId },
+      order: { created_at: 'DESC' },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Pagamento para o pedido ${orderId} não encontrado`);
+    }
+
+    if (payment.method === 'pix') {
+      return this.confirmPixPayment(payment);
+    }
+
+    return this.confirmCardPayment(orderId, payment, cardLastFour, installments);
+  }
+
+  private async confirmPixPayment(payment: Payment) {
+    if (payment.status === 'approved') {
+      return { approved: true, status: 'approved' };
+    }
+
+    this.logger.log(`Checking PIX status for provider payment ${payment.provider_payment_id}`);
+    const result = await this.paymentGateway.checkPaymentStatus(payment.provider_payment_id);
+
+    if (result.status === 'approved') {
+      await this.approveByProviderPaymentId(payment.provider_payment_id);
+      return { approved: true, status: 'approved' };
+    }
+
+    return { approved: false, status: result.status };
+  }
+
+  private async confirmCardPayment(
+    orderId: number,
+    payment: Payment,
     cardLastFour?: string,
     installments?: number,
   ) {
@@ -80,28 +125,19 @@ export class PaymentsService {
         await queryRunner.manager.save(gift);
       }
 
-      const paymentId = `PAY-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-
       await queryRunner.manager.update(Order, orderId, {
         payment_status: 'confirmed',
-        payment_id: paymentId,
+        payment_id: payment.provider_payment_id,
       });
 
-      const payment = await queryRunner.manager.findOne(Payment, {
-        where: { order_id: orderId },
-        order: { created_at: 'DESC' },
-      });
-
-      if (payment) {
-        payment.status = 'approved';
-        await queryRunner.manager.save(payment);
-      }
+      payment.status = 'approved';
+      await queryRunner.manager.save(payment);
 
       await queryRunner.commitTransaction();
 
       return {
-        success: true,
-        payment_id: paymentId,
+        approved: true,
+        payment_id: payment.provider_payment_id,
         payment_method: order.payment_method,
         card_last_four: cardLastFour || null,
         installments: installments || 1,
