@@ -16,8 +16,8 @@ export class OrderItem {
   @Column({ type: 'int' })
   order_id: number;
 
-  @Column({ type: 'int' })
-  gift_id: number;
+  @Column({ type: 'int', nullable: true })
+  gift_id: number | null;
 
   @Column({ type: 'varchar', length: 255 })
   gift_name: string;
