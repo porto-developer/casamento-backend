@@ -9,6 +9,7 @@ import { UpdateGuestDto } from './dto/update-guest.dto';
 import {
   parseOptionalBrazilPhone,
   parseOptionalBrazilCpf,
+  parseRequiredBrazilPhone,
 } from '../common/utils/brazil-contact.util';
 import { throwIfPostgresUniqueViolation } from '../common/utils/postgres-unique.util';
 
@@ -68,6 +69,21 @@ export class GuestsService {
       throw new NotFoundException('Convite não encontrado');
     }
 
+    const name = dto.name.trim();
+    const phone = parseRequiredBrazilPhone(dto.phone);
+
+    if (name === principal.name.trim()) {
+      throw new BadRequestException(
+        'O nome deve ser diferente do cadastrado',
+      );
+    }
+
+    if (phone === principal.phone) {
+      throw new BadRequestException(
+        'O celular deve ser diferente do cadastrado',
+      );
+    }
+
     const allowed = new Set<number>([
       principal.id,
       ...(principal.children ?? []).map((c) => c.id),
@@ -99,6 +115,12 @@ export class GuestsService {
     await queryRunner.startTransaction();
 
     try {
+      await queryRunner.manager.update(
+        Guest,
+        { id: principal.id },
+        { name, phone },
+      );
+
       for (const row of dto.attendees) {
         await queryRunner.manager.update(
           Guest,
@@ -112,6 +134,10 @@ export class GuestsService {
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
+      throwIfPostgresUniqueViolation(
+        err,
+        'Telefone ou documento já cadastrado para outro convidado',
+      );
       throw err;
     } finally {
       await queryRunner.release();
