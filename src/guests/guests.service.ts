@@ -114,7 +114,14 @@ export class GuestsService {
         );
       }
 
-      return { ...row, name, phone };
+      const observation =
+        row.observation === undefined
+          ? current.observation
+          : row.observation === null || row.observation.trim() === ''
+            ? null
+            : row.observation.trim();
+
+      return { ...row, name, phone, observation };
     });
 
     const now = new Date();
@@ -131,6 +138,7 @@ export class GuestsService {
           {
             name: row.name,
             phone: row.phone,
+            observation: row.observation,
             will_attend: row.will_attend,
             rsvp_updated_at: now,
           },

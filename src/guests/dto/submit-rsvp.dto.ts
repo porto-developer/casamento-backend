@@ -8,6 +8,7 @@ import {
   IsBoolean,
   IsString,
   IsNotEmpty,
+  IsOptional,
 } from 'class-validator';
 
 export class RsvpAttendeeDto {
@@ -33,6 +34,17 @@ export class RsvpAttendeeDto {
   @IsNotEmpty()
   phone: string;
 
+  @ApiProperty({
+    example: '5 anos',
+    required: false,
+    nullable: true,
+    description:
+      'Observação opcional (ex.: idade da criança). Vazio ou null remove o valor.',
+  })
+  @IsOptional()
+  @IsString()
+  observation?: string | null;
+
   @ApiProperty({ example: true })
   @IsBoolean()
   will_attend: boolean;
@@ -42,7 +54,7 @@ export class SubmitRsvpDto {
   @ApiProperty({
     type: [RsvpAttendeeDto],
     description:
-      'Um item por membro do convite (principal + acompanhantes). Cada um deve enviar nome e celular diferentes dos cadastrados.',
+      'Um item por membro do convite (principal + acompanhantes). Cada um deve enviar nome e celular diferentes dos cadastrados. Observation é opcional.',
   })
   @IsArray()
   @ArrayMinSize(1)
