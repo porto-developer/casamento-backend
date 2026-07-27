@@ -23,6 +23,15 @@ export class CreateDependentNestedDto {
   @IsOptional()
   @IsString()
   document?: string;
+
+  @ApiProperty({
+    example: '5 anos',
+    required: false,
+    description: 'Observação opcional (ex.: idade da criança)',
+  })
+  @IsOptional()
+  @IsString()
+  observation?: string;
 }
 
 export class CreateGuestDto {
@@ -40,6 +49,15 @@ export class CreateGuestDto {
   @IsOptional()
   @IsString()
   document?: string;
+
+  @ApiProperty({
+    example: '5 anos',
+    required: false,
+    description: 'Observação opcional (ex.: idade da criança)',
+  })
+  @IsOptional()
+  @IsString()
+  observation?: string;
 
   @ApiProperty({
     type: [CreateDependentNestedDto],

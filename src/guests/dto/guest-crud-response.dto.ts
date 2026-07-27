@@ -14,6 +14,9 @@ export class GuestCrudResponseDto {
   document: string | null;
 
   @ApiProperty({ nullable: true })
+  observation: string | null;
+
+  @ApiProperty({ nullable: true })
   parent_guest_id: number | null;
 
   @ApiProperty({ nullable: true })

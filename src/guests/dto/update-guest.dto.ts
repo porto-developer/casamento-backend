@@ -17,4 +17,13 @@ export class UpdateGuestDto {
   @IsOptional()
   @IsString()
   document?: string | null;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Observação opcional (ex.: idade da criança). Vazio remove o valor.',
+  })
+  @IsOptional()
+  @IsString()
+  observation?: string | null;
 }

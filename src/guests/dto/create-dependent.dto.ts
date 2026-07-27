@@ -16,4 +16,13 @@ export class CreateDependentDto {
   @IsOptional()
   @IsString()
   document?: string;
+
+  @ApiProperty({
+    example: '5 anos',
+    required: false,
+    description: 'Observação opcional (ex.: idade da criança)',
+  })
+  @IsOptional()
+  @IsString()
+  observation?: string;
 }

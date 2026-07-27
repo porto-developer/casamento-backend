@@ -162,6 +162,8 @@ export class GuestsService {
         name: dto.name.trim(),
         phone,
         document,
+        observation:
+          dto.observation?.trim() ? dto.observation.trim() : null,
         parent_guest_id: null,
       });
       const savedPrincipal = await queryRunner.manager.save(principal);
@@ -175,6 +177,8 @@ export class GuestsService {
             name: dep.name.trim(),
             phone: childPhone,
             document: childDoc,
+            observation:
+              dep.observation?.trim() ? dep.observation.trim() : null,
             parent_guest_id: principalId,
           });
           await queryRunner.manager.save(child);
@@ -223,6 +227,8 @@ export class GuestsService {
       name: dto.name.trim(),
       phone,
       document,
+      observation:
+        dto.observation?.trim() ? dto.observation.trim() : null,
       parent_guest_id: principalId,
     });
 
@@ -273,6 +279,12 @@ export class GuestsService {
         dto.document === null || dto.document === ''
           ? null
           : parseOptionalBrazilCpf(dto.document);
+    }
+    if (dto.observation !== undefined) {
+      guest.observation =
+        dto.observation === null || dto.observation.trim() === ''
+          ? null
+          : dto.observation.trim();
     }
 
     try {

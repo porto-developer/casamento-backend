@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS guests (
   name VARCHAR(255) NOT NULL,
   phone VARCHAR(20),
   document VARCHAR(14) UNIQUE,
+  observation TEXT,
   parent_guest_id INTEGER REFERENCES guests(id) ON DELETE CASCADE,
   will_attend BOOLEAN,
   rsvp_updated_at TIMESTAMP,

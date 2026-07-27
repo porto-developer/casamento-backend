@@ -24,6 +24,9 @@ export class Guest {
   @Column({ type: 'varchar', length: 14, nullable: true, unique: true })
   document: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  observation: string | null;
+
   @Column({ type: 'int', nullable: true })
   parent_guest_id: number | null;
 
