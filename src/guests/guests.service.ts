@@ -69,25 +69,14 @@ export class GuestsService {
       throw new NotFoundException('Convite não encontrado');
     }
 
-    const name = dto.name.trim();
-    const phone = parseRequiredBrazilPhone(dto.phone);
-
-    if (name === principal.name.trim()) {
-      throw new BadRequestException(
-        'O nome deve ser diferente do cadastrado',
-      );
-    }
-
-    if (phone === principal.phone) {
-      throw new BadRequestException(
-        'O celular deve ser diferente do cadastrado',
-      );
-    }
-
-    const allowed = new Set<number>([
-      principal.id,
-      ...(principal.children ?? []).map((c) => c.id),
+    const membersById = new Map<number, Guest>([
+      [principal.id, principal],
+      ...(principal.children ?? []).map(
+        (c): [number, Guest] => [c.id, c],
+      ),
     ]);
+
+    const allowed = new Set(membersById.keys());
 
     const payloadIds = dto.attendees.map((a) => a.guest_id);
     if (payloadIds.length !== allowed.size) {
@@ -108,6 +97,26 @@ export class GuestsService {
       }
     }
 
+    const normalized = dto.attendees.map((row) => {
+      const current = membersById.get(row.guest_id)!;
+      const name = row.name.trim();
+      const phone = parseRequiredBrazilPhone(row.phone);
+
+      if (name === current.name.trim()) {
+        throw new BadRequestException(
+          `O nome do participante ${row.guest_id} deve ser diferente do cadastrado`,
+        );
+      }
+
+      if (phone === current.phone) {
+        throw new BadRequestException(
+          `O celular do participante ${row.guest_id} deve ser diferente do cadastrado`,
+        );
+      }
+
+      return { ...row, name, phone };
+    });
+
     const now = new Date();
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -115,17 +124,13 @@ export class GuestsService {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.manager.update(
-        Guest,
-        { id: principal.id },
-        { name, phone },
-      );
-
-      for (const row of dto.attendees) {
+      for (const row of normalized) {
         await queryRunner.manager.update(
           Guest,
           { id: row.guest_id },
           {
+            name: row.name,
+            phone: row.phone,
             will_attend: row.will_attend,
             rsvp_updated_at: now,
           },
@@ -134,10 +139,6 @@ export class GuestsService {
       await queryRunner.commitTransaction();
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      throwIfPostgresUniqueViolation(
-        err,
-        'Telefone ou documento já cadastrado para outro convidado',
-      );
       throw err;
     } finally {
       await queryRunner.release();
@@ -185,7 +186,7 @@ export class GuestsService {
       await queryRunner.rollbackTransaction();
       throwIfPostgresUniqueViolation(
         err,
-        'Telefone ou documento já cadastrado para outro convidado',
+        'Documento já cadastrado para outro convidado',
       );
       throw err;
     } finally {
@@ -230,7 +231,7 @@ export class GuestsService {
     } catch (err) {
       throwIfPostgresUniqueViolation(
         err,
-        'Telefone ou documento já cadastrado para outro convidado',
+        'Documento já cadastrado para outro convidado',
       );
       throw err;
     }
@@ -279,7 +280,7 @@ export class GuestsService {
     } catch (err) {
       throwIfPostgresUniqueViolation(
         err,
-        'Telefone ou documento já cadastrado para outro convidado',
+        'Documento já cadastrado para outro convidado',
       );
       throw err;
     }

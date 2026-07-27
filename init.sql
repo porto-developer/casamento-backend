@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS gifts (
 CREATE TABLE IF NOT EXISTS guests (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
-  phone VARCHAR(20) UNIQUE,
+  phone VARCHAR(20),
   document VARCHAR(14) UNIQUE,
   parent_guest_id INTEGER REFERENCES guests(id) ON DELETE CASCADE,
   will_attend BOOLEAN,

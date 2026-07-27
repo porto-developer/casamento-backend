@@ -18,7 +18,7 @@ export class Guest {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
-  @Column({ type: 'varchar', length: 20, nullable: true, unique: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string | null;
 
   @Column({ type: 'varchar', length: 14, nullable: true, unique: true })

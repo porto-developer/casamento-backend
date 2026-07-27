@@ -124,7 +124,7 @@ export class GuestsController {
   @ApiBody({ type: CreateGuestDto })
   @ApiResponse({ status: 201, type: GuestCrudResponseDto })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 409, description: 'Telefone ou documento duplicado' })
+  @ApiResponse({ status: 409, description: 'Documento duplicado' })
   async create(@Body() dto: CreateGuestDto): Promise<GuestCrudResponseDto> {
     const guest = await this.guestsService.create(dto);
     return toGuestCrudResponseDto(guest);
@@ -153,7 +153,7 @@ export class GuestsController {
   @ApiOperation({
     summary: 'Enviar confirmação de presença',
     description:
-      'Atualiza nome e celular do convidado principal (obrigatório e diferentes dos cadastrados) e confirma presença de todos os membros. Deve incluir um item por cada pessoa do convite (principal + todos os subconvidados).',
+      'Atualiza nome e celular de todos os membros (principal + acompanhantes) — obrigatórios e diferentes dos cadastrados — e confirma a presença. Deve incluir um item por cada pessoa do convite.',
   })
   @ApiParam({ name: 'token', format: 'uuid' })
   @ApiBody({ type: SubmitRsvpDto })
@@ -164,7 +164,6 @@ export class GuestsController {
       'Lista inválida, telefone inválido, ou nome/celular iguais aos já cadastrados',
   })
   @ApiResponse({ status: 404, description: 'Convite não encontrado' })
-  @ApiResponse({ status: 409, description: 'Telefone já cadastrado para outro convidado' })
   async submitRsvp(
     @Param('token', ParseUUIDPipe) token: string,
     @Body() dto: SubmitRsvpDto,
@@ -217,7 +216,7 @@ export class GuestsController {
   @ApiBody({ type: UpdateGuestDto })
   @ApiResponse({ status: 200, type: GuestCrudResponseDto })
   @ApiResponse({ status: 404, description: 'Não encontrado' })
-  @ApiResponse({ status: 409, description: 'Telefone ou documento duplicado' })
+  @ApiResponse({ status: 409, description: 'Documento duplicado' })
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateGuestDto,
@@ -252,7 +251,7 @@ export class GuestsController {
   @ApiResponse({ status: 201, type: GuestCrudResponseDto })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Principal não encontrado' })
-  @ApiResponse({ status: 409, description: 'Telefone ou documento duplicado' })
+  @ApiResponse({ status: 409, description: 'Documento duplicado' })
   async createDependent(
     @Param('principalId', ParseIntPipe) principalId: number,
     @Body() dto: CreateDependentDto,
