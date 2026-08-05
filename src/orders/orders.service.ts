@@ -102,6 +102,7 @@ export class OrdersService {
         pixCopyPaste?: string | null;
         expiresAt?: Date | null;
         status?: string;
+        installments?: number;
       };
 
       if (dto.payment_method === PaymentMethodEnum.PIX) {
@@ -125,6 +126,8 @@ export class OrdersService {
           );
         }
 
+        const installments = dto.installments ?? 1;
+
         const cardResult = await this.paymentGateway.createCardPayment({
           orderId: savedOrder.id,
           amount: total,
@@ -147,10 +150,12 @@ export class OrdersService {
             phone: dto.credit_card_holder_info.phone,
           },
           remoteIp: dto.remote_ip,
+          installments,
         });
         paymentResult = {
           providerPaymentId: cardResult.providerPaymentId,
           status: cardResult.status,
+          installments,
         };
       }
 
@@ -162,6 +167,7 @@ export class OrdersService {
         provider_payment_id: paymentResult.providerPaymentId,
         method: dto.payment_method,
         amount: total,
+        installments: paymentResult.installments ?? 1,
         status: 'pending',
         pix_qr_code: paymentResult.pixQrCode || null,
         pix_copy_paste: paymentResult.pixCopyPaste || null,
@@ -187,6 +193,7 @@ export class OrdersService {
         total,
         payment_method: 'credit_card',
         status: paymentResult.status || 'processing',
+        installments: paymentResult.installments ?? 1,
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();

@@ -147,36 +147,47 @@ export class AsaasPaymentProvider implements PaymentGateway {
 
     const dueDate = new Date();
     const dueDateStr = dueDate.toISOString().split('T')[0];
+    const installments = data.installments >= 2 ? data.installments : 1;
+
+    const body: Record<string, unknown> = {
+      customer: customerId,
+      billingType: 'CREDIT_CARD',
+      dueDate: dueDateStr,
+      description: data.description,
+      creditCard: {
+        holderName: data.creditCard.holderName,
+        number: data.creditCard.number,
+        expiryMonth: data.creditCard.expiryMonth,
+        expiryYear: data.creditCard.expiryYear,
+        ccv: data.creditCard.ccv,
+      },
+      creditCardHolderInfo: {
+        name: data.creditCardHolderInfo.name,
+        email: data.creditCardHolderInfo.email,
+        cpfCnpj: data.creditCardHolderInfo.cpfCnpj,
+        postalCode: data.creditCardHolderInfo.postalCode,
+        addressNumber: data.creditCardHolderInfo.addressNumber,
+        phone: data.creditCardHolderInfo.phone,
+      },
+      remoteIp: data.remoteIp,
+    };
+
+    if (installments >= 2) {
+      body.installmentCount = installments;
+      body.totalValue = data.amount;
+    } else {
+      body.value = data.amount;
+    }
 
     const payment = await this.request<AsaasPaymentResponse>(
       'POST',
       '/payments',
-      {
-        customer: customerId,
-        billingType: 'CREDIT_CARD',
-        value: data.amount,
-        dueDate: dueDateStr,
-        description: data.description,
-        creditCard: {
-          holderName: data.creditCard.holderName,
-          number: data.creditCard.number,
-          expiryMonth: data.creditCard.expiryMonth,
-          expiryYear: data.creditCard.expiryYear,
-          ccv: data.creditCard.ccv,
-        },
-        creditCardHolderInfo: {
-          name: data.creditCardHolderInfo.name,
-          email: data.creditCardHolderInfo.email,
-          cpfCnpj: data.creditCardHolderInfo.cpfCnpj,
-          postalCode: data.creditCardHolderInfo.postalCode,
-          addressNumber: data.creditCardHolderInfo.addressNumber,
-          phone: data.creditCardHolderInfo.phone,
-        },
-        remoteIp: data.remoteIp,
-      },
+      body,
     );
 
-    this.logger.log(`Card payment created: ${payment.id} — status: ${payment.status}`);
+    this.logger.log(
+      `Card payment created: ${payment.id} — status: ${payment.status} — installments: ${installments}`,
+    );
 
     const statusMap: Record<string, 'processing' | 'approved' | 'rejected'> = {
       CONFIRMED: 'approved',

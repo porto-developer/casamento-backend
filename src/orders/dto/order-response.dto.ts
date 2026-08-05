@@ -32,4 +32,7 @@ export class OrderCardResponseDto {
 
   @ApiProperty({ example: 'processing' })
   status: string;
+
+  @ApiProperty({ example: 1, description: 'Número de parcelas (1 a 6x sem juros)' })
+  installments: number;
 }

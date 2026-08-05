@@ -32,6 +32,8 @@ export interface CreateCardPaymentData {
   creditCard: CreditCardData;
   creditCardHolderInfo: CreditCardHolderInfo;
   remoteIp: string;
+  /** Parcelas (1 a 6x sem juros). Default tratado pelo caller. */
+  installments: number;
 }
 
 export interface PixPaymentResult {

@@ -13,6 +13,9 @@ export class PaymentStatusResponseDto {
   @ApiProperty()
   amount: number;
 
+  @ApiProperty({ example: 1, description: 'Número de parcelas (cartão); 1 para PIX' })
+  installments: number;
+
   @ApiProperty()
   status: string;
 

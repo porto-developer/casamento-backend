@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS payments (
   provider_payment_id VARCHAR(255) NOT NULL,
   method VARCHAR(20) NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
+  installments INTEGER NOT NULL DEFAULT 1,
   status VARCHAR(20) DEFAULT 'pending',
   pix_qr_code TEXT,
   pix_copy_paste TEXT,

@@ -140,7 +140,7 @@ export class PaymentsService {
         payment_id: payment.provider_payment_id,
         payment_method: order.payment_method,
         card_last_four: cardLastFour || null,
-        installments: installments || 1,
+        installments: payment.installments ?? installments ?? 1,
       };
     } catch (error) {
       await queryRunner.rollbackTransaction();

@@ -7,7 +7,10 @@ import {
   IsEnum,
   IsOptional,
   IsNumber,
+  IsInt,
   IsEmail,
+  Min,
+  Max,
   ValidateNested,
   ValidateIf,
 } from 'class-validator';
@@ -135,6 +138,21 @@ export class CreateOrderDto {
   @IsString()
   @IsNotEmpty({ message: 'IP remoto é obrigatório para pagamento com cartão' })
   remote_ip?: string;
+
+  @ApiProperty({
+    example: 1,
+    required: false,
+    minimum: 1,
+    maximum: 6,
+    description: 'Parcelas do cartão (1 a 6x sem juros). Default: 1',
+  })
+  @ValidateIf((o) => o.payment_method === PaymentMethodEnum.CREDIT_CARD)
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'Parcelas deve ser um número inteiro' })
+  @Min(1, { message: 'Parcelas deve ser no mínimo 1' })
+  @Max(6, { message: 'Parcelas deve ser no máximo 6' })
+  installments?: number;
 
   @ApiProperty({ type: [OrderItemDto] })
   @IsArray()

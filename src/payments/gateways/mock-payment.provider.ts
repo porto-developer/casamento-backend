@@ -31,7 +31,7 @@ export class MockPaymentProvider implements PaymentGateway {
 
   async createCardPayment(data: CreateCardPaymentData): Promise<CardPaymentResult> {
     this.logger.log(
-      `[MOCK] Creating card payment for order ${data.orderId}: R$${data.amount}`,
+      `[MOCK] Creating card payment for order ${data.orderId}: R$${data.amount} in ${data.installments}x`,
     );
 
     return {
