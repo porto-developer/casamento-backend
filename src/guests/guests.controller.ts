@@ -156,7 +156,7 @@ export class GuestsController {
   @ApiOperation({
     summary: 'Enviar confirmação de presença',
     description:
-      'Atualiza nome e celular de todos os membros (principal + acompanhantes) — obrigatórios e diferentes dos cadastrados — e confirma a presença. Deve incluir um item por cada pessoa do convite.',
+      'Confirma presença de todos os membros. Quando will_attend=true, nome e celular são obrigatórios e devem ser diferentes dos cadastrados. Quando will_attend=false, atualização de dados é opcional.',
   })
   @ApiParam({ name: 'token', format: 'uuid' })
   @ApiBody({ type: SubmitRsvpDto })
@@ -164,7 +164,7 @@ export class GuestsController {
   @ApiResponse({
     status: 400,
     description:
-      'Lista inválida, telefone inválido, ou nome/celular iguais aos já cadastrados',
+      'Lista inválida, telefone inválido, ou nome/celular iguais aos já cadastrados (apenas quando will_attend=true)',
   })
   @ApiResponse({ status: 404, description: 'Convite não encontrado' })
   async submitRsvp(

@@ -9,6 +9,7 @@ import {
   IsString,
   IsNotEmpty,
   IsOptional,
+  ValidateIf,
 } from 'class-validator';
 
 export class RsvpAttendeeDto {
@@ -18,21 +19,25 @@ export class RsvpAttendeeDto {
 
   @ApiProperty({
     example: 'João da Silva',
+    required: false,
     description:
-      'Nome atualizado. Obrigatório e deve ser diferente do cadastrado.',
+      'Nome atualizado. Obrigatório e deve ser diferente do cadastrado quando will_attend=true. Quando will_attend=false, é opcional (pode omitir ou manter o atual).',
   })
+  @ValidateIf((o: RsvpAttendeeDto) => o.will_attend === true)
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name?: string;
 
   @ApiProperty({
     example: '11999998888',
+    required: false,
     description:
-      'Celular atualizado. Obrigatório e deve ser diferente do cadastrado. Pode se repetir entre membros do mesmo convite (ex.: criança com o celular do responsável).',
+      'Celular atualizado. Obrigatório e deve ser diferente do cadastrado quando will_attend=true. Quando will_attend=false, é opcional. Pode se repetir entre membros do convite.',
   })
+  @ValidateIf((o: RsvpAttendeeDto) => o.will_attend === true)
   @IsString()
   @IsNotEmpty()
-  phone: string;
+  phone?: string;
 
   @ApiProperty({
     example: '5 anos',
@@ -54,7 +59,7 @@ export class SubmitRsvpDto {
   @ApiProperty({
     type: [RsvpAttendeeDto],
     description:
-      'Um item por membro do convite (principal + acompanhantes). Cada um deve enviar nome e celular diferentes dos cadastrados. Observation é opcional.',
+      'Um item por membro do convite (principal + acompanhantes). Se will_attend=true, nome e celular são obrigatórios e devem diferir dos cadastrados. Se will_attend=false, atualização de dados é opcional.',
   })
   @IsArray()
   @ArrayMinSize(1)

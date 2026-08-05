@@ -99,19 +99,43 @@ export class GuestsService {
 
     const normalized = dto.attendees.map((row) => {
       const current = membersById.get(row.guest_id)!;
-      const name = row.name.trim();
-      const phone = parseRequiredBrazilPhone(row.phone);
 
-      if (name === current.name.trim()) {
-        throw new BadRequestException(
-          `O nome do participante ${row.guest_id} deve ser diferente do cadastrado`,
-        );
-      }
+      let name = current.name;
+      let phone = current.phone;
 
-      if (phone === current.phone) {
-        throw new BadRequestException(
-          `O celular do participante ${row.guest_id} deve ser diferente do cadastrado`,
-        );
+      if (row.will_attend) {
+        if (row.name == null || row.name.trim() === '') {
+          throw new BadRequestException(
+            `O nome do participante ${row.guest_id} é obrigatório quando confirma presença`,
+          );
+        }
+        if (row.phone == null || row.phone.trim() === '') {
+          throw new BadRequestException(
+            `O celular do participante ${row.guest_id} é obrigatório quando confirma presença`,
+          );
+        }
+
+        name = row.name.trim();
+        phone = parseRequiredBrazilPhone(row.phone);
+
+        if (name === current.name.trim()) {
+          throw new BadRequestException(
+            `O nome do participante ${row.guest_id} deve ser diferente do cadastrado`,
+          );
+        }
+
+        if (phone === current.phone) {
+          throw new BadRequestException(
+            `O celular do participante ${row.guest_id} deve ser diferente do cadastrado`,
+          );
+        }
+      } else {
+        if (row.name != null && row.name.trim() !== '') {
+          name = row.name.trim();
+        }
+        if (row.phone != null && row.phone.trim() !== '') {
+          phone = parseRequiredBrazilPhone(row.phone);
+        }
       }
 
       const observation =
