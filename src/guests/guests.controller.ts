@@ -182,7 +182,7 @@ export class GuestsController {
   @ApiOperation({
     summary: 'Exportar lista de convidados em PDF',
     description:
-      'Gera um PDF simples com todos os convidados e o status de presença para impressão.',
+      'Gera um PDF com cada convidado em linha própria (sem agrupamento) e o status de presença.',
   })
   @ApiResponse({
     status: 200,
@@ -201,7 +201,7 @@ export class GuestsController {
   @ApiOperation({
     summary: 'Exportar lista de convidados em XLSX',
     description:
-      'Gera uma planilha Excel com todos os convidados, tipo (principal/dependente) e status de presença.',
+      'Gera uma planilha Excel com uma linha por convidado (sem agrupamento), tipo e status de presença.',
   })
   @ApiResponse({
     status: 200,

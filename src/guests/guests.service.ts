@@ -346,6 +346,10 @@ export class GuestsService {
     return 'Pendente';
   }
 
+  private async findAllGuestsFlat(): Promise<Guest[]> {
+    return this.guestRepository.find({ order: { id: 'ASC' } });
+  }
+
   async buildGuestListPdfBuffer(): Promise<Buffer> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const PDFDocument = require('pdfkit');
@@ -357,44 +361,34 @@ export class GuestsService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', (err: Error) => reject(err));
 
-      const groups = await this.findAllGrouped();
+      const guests = await this.findAllGuestsFlat();
       const now = new Date();
+
+      const attending = guests.filter((g) => g.will_attend === true).length;
+      const declined = guests.filter((g) => g.will_attend === false).length;
+      const pending = guests.filter((g) => g.will_attend == null).length;
 
       doc.fontSize(18).text('Lista de convidados', { align: 'center' });
       doc.moveDown(0.5);
       doc.fontSize(10).text(`Gerado em: ${now.toLocaleString('pt-BR')}`, {
         align: 'center',
       });
+      doc.moveDown(0.5);
+      doc
+        .fontSize(10)
+        .text(
+          `Resumo: Sim=${attending}  Não=${declined}  Pendente=${pending}`,
+          { align: 'center' },
+        );
       doc.moveDown();
 
-      for (const group of groups) {
-        const { principal, members } = group;
-        doc
-          .moveDown()
-          .fontSize(12)
-          .text(`Convidado principal: ${principal.name}`, { continued: false });
+      doc.fontSize(10).text('Nome', { continued: true, width: 250 });
+      doc.text('Presença', { align: 'right' });
+      doc.moveDown(0.25);
 
-        const attending = members.filter((m) => m.will_attend === true).length;
-        const declined = members.filter((m) => m.will_attend === false).length;
-        const pending = members.filter((m) => m.will_attend == null).length;
-
-        doc
-          .fontSize(10)
-          .text(
-            `Resumo: Sim=${attending}  Não=${declined}  Pendente=${pending}`,
-          );
-        doc.moveDown(0.5);
-
-        doc.fontSize(10).text('Nome', { continued: true, width: 250 });
-        doc.text('Presença', { align: 'right' });
-        doc.moveDown(0.25);
-
-        for (const member of members) {
-          doc.text(member.name, { continued: true, width: 250 });
-          doc.text(this.presenceLabel(member.will_attend), { align: 'right' });
-        }
-
-        doc.moveDown();
+      for (const guest of guests) {
+        doc.text(guest.name, { continued: true, width: 250 });
+        doc.text(this.presenceLabel(guest.will_attend), { align: 'right' });
       }
 
       doc.end();
@@ -413,7 +407,6 @@ export class GuestsService {
     });
 
     sheet.columns = [
-      { header: 'Convidado principal', key: 'principal', width: 28 },
       { header: 'Nome', key: 'name', width: 28 },
       { header: 'Tipo', key: 'type', width: 14 },
       { header: 'Telefone', key: 'phone', width: 16 },
@@ -427,24 +420,20 @@ export class GuestsService {
     headerRow.font = { bold: true };
     headerRow.alignment = { vertical: 'middle' };
 
-    const groups = await this.findAllGrouped();
+    const guests = await this.findAllGuestsFlat();
 
-    for (const group of groups) {
-      const { principal, members } = group;
-      for (const member of members) {
-        sheet.addRow({
-          principal: principal.name,
-          name: member.name,
-          type: member.id === principal.id ? 'Principal' : 'Dependente',
-          phone: member.phone ?? '',
-          document: member.document ?? '',
-          observation: member.observation ?? '',
-          presence: this.presenceLabel(member.will_attend),
-          rsvpUpdatedAt: member.rsvp_updated_at
-            ? member.rsvp_updated_at.toLocaleString('pt-BR')
-            : '',
-        });
-      }
+    for (const guest of guests) {
+      sheet.addRow({
+        name: guest.name,
+        type: guest.parent_guest_id == null ? 'Principal' : 'Dependente',
+        phone: guest.phone ?? '',
+        document: guest.document ?? '',
+        observation: guest.observation ?? '',
+        presence: this.presenceLabel(guest.will_attend),
+        rsvpUpdatedAt: guest.rsvp_updated_at
+          ? guest.rsvp_updated_at.toLocaleString('pt-BR')
+          : '',
+      });
     }
 
     const arrayBuffer = await workbook.xlsx.writeBuffer();
