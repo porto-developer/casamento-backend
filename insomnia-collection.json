@@ -232,6 +232,17 @@
     },
     {
       "_type": "request",
+      "_id": "req_guests_xlsx",
+      "parentId": "fld_guests",
+      "name": "Exportar lista de convidados (XLSX)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/guests/export/xlsx",
+      "description": "Retorna uma planilha Excel com a lista completa de convidados.",
+      "headers": [],
+      "body": {}
+    },
+    {
+      "_type": "request",
       "_id": "req_guests_dependent",
       "parentId": "fld_guests",
       "name": "Adicionar dependente",

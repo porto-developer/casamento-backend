@@ -340,6 +340,12 @@ export class GuestsService {
     await this.guestRepository.remove(guest);
   }
 
+  private presenceLabel(willAttend: boolean | null): string {
+    if (willAttend === true) return 'Sim';
+    if (willAttend === false) return 'Não';
+    return 'Pendente';
+  }
+
   async buildGuestListPdfBuffer(): Promise<Buffer> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const PDFDocument = require('pdfkit');
@@ -384,14 +390,8 @@ export class GuestsService {
         doc.moveDown(0.25);
 
         for (const member of members) {
-          const presence =
-            member.will_attend === true
-              ? 'Sim'
-              : member.will_attend === false
-              ? 'Não'
-              : 'Pendente';
           doc.text(member.name, { continued: true, width: 250 });
-          doc.text(presence, { align: 'right' });
+          doc.text(this.presenceLabel(member.will_attend), { align: 'right' });
         }
 
         doc.moveDown();
@@ -399,5 +399,55 @@ export class GuestsService {
 
       doc.end();
     });
+  }
+
+  async buildGuestListXlsxBuffer(): Promise<Buffer> {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Wedding Gifts API';
+    workbook.created = new Date();
+
+    const sheet = workbook.addWorksheet('Lista de convidados', {
+      views: [{ state: 'frozen', ySplit: 1 }],
+    });
+
+    sheet.columns = [
+      { header: 'Convidado principal', key: 'principal', width: 28 },
+      { header: 'Nome', key: 'name', width: 28 },
+      { header: 'Tipo', key: 'type', width: 14 },
+      { header: 'Telefone', key: 'phone', width: 16 },
+      { header: 'Documento', key: 'document', width: 16 },
+      { header: 'Observação', key: 'observation', width: 32 },
+      { header: 'Presença', key: 'presence', width: 12 },
+      { header: 'RSVP atualizado em', key: 'rsvpUpdatedAt', width: 22 },
+    ];
+
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { vertical: 'middle' };
+
+    const groups = await this.findAllGrouped();
+
+    for (const group of groups) {
+      const { principal, members } = group;
+      for (const member of members) {
+        sheet.addRow({
+          principal: principal.name,
+          name: member.name,
+          type: member.id === principal.id ? 'Principal' : 'Dependente',
+          phone: member.phone ?? '',
+          document: member.document ?? '',
+          observation: member.observation ?? '',
+          presence: this.presenceLabel(member.will_attend),
+          rsvpUpdatedAt: member.rsvp_updated_at
+            ? member.rsvp_updated_at.toLocaleString('pt-BR')
+            : '',
+        });
+      }
+    }
+
+    const arrayBuffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(arrayBuffer);
   }
 }

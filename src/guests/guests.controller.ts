@@ -197,6 +197,27 @@ export class GuestsController {
     });
   }
 
+  @Get('export/xlsx')
+  @ApiOperation({
+    summary: 'Exportar lista de convidados em XLSX',
+    description:
+      'Gera uma planilha Excel com todos os convidados, tipo (principal/dependente) e status de presença.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'XLSX gerado com sucesso',
+    content: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {},
+    },
+  })
+  async exportXlsx(): Promise<StreamableFile> {
+    const buffer = await this.guestsService.buildGuestListXlsxBuffer();
+    return new StreamableFile(buffer, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      disposition: 'attachment; filename="lista-convidados.xlsx"',
+    });
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar convidado por id' })
   @ApiParam({ name: 'id', type: Number })
