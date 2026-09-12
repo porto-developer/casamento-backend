@@ -23,6 +23,9 @@ export class Payment {
   @Column({ type: 'varchar', length: 255 })
   provider_payment_id: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  provider_installment_id: string | null;
+
   @Column({ type: 'varchar', length: 20 })
   method: string;
 

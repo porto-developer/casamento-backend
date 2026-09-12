@@ -54,8 +54,17 @@ export class MockPaymentProvider implements PaymentGateway {
     const body = payload as Record<string, unknown>;
     return {
       providerPaymentId: (body.provider_payment_id as string) || '',
+      providerInstallmentId: (body.provider_installment_id as string) || undefined,
+      installmentNumber:
+        typeof body.installment_number === 'number'
+          ? body.installment_number
+          : undefined,
       status: (body.status as 'approved' | 'rejected' | 'failed') || 'approved',
       rawPayload: body,
     };
+  }
+
+  async listInstallmentPaymentIds(_installmentId: string): Promise<string[]> {
+    return [];
   }
 }

@@ -6,7 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, In } from 'typeorm';
+import { DataSource, EntityManager, Repository, In } from 'typeorm';
 import { Payment } from './payment.entity';
 import { Order } from '../orders/order.entity';
 import { OrderItem } from '../orders/order-item.entity';
@@ -150,14 +150,30 @@ export class PaymentsService {
     }
   }
 
-  async approveByProviderPaymentId(providerPaymentId: string): Promise<void> {
+  async approveByProviderPaymentId(
+    providerPaymentId: string,
+    providerInstallmentId?: string,
+  ): Promise<void> {
+    const existing = await this.findPaymentForProviderEvent(
+      this.paymentRepository.manager,
+      providerPaymentId,
+      providerInstallmentId,
+    );
+
+    if (!existing) {
+      throw new NotFoundException(
+        `Pagamento com provider_payment_id ${providerPaymentId} não encontrado`,
+      );
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       const payment = await queryRunner.manager.findOne(Payment, {
-        where: { provider_payment_id: providerPaymentId },
+        where: { id: existing.id },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!payment) {
@@ -167,7 +183,12 @@ export class PaymentsService {
       }
 
       if (payment.status === 'approved') {
-        this.logger.log(`Payment ${providerPaymentId} already approved — idempotent skip`);
+        this.logger.log(
+          `Payment ${payment.provider_payment_id} already approved` +
+            (providerPaymentId !== payment.provider_payment_id
+              ? ` — acknowledging related installment ${providerPaymentId}`
+              : ' — idempotent skip'),
+        );
         await queryRunner.commitTransaction();
         return;
       }
@@ -177,7 +198,7 @@ export class PaymentsService {
 
       await queryRunner.manager.update(Order, payment.order_id, {
         payment_status: 'approved',
-        payment_id: providerPaymentId,
+        payment_id: payment.provider_payment_id,
       });
 
       const orderItems = await queryRunner.manager.find(OrderItem, {
@@ -198,7 +219,9 @@ export class PaymentsService {
       }
 
       await queryRunner.commitTransaction();
-      this.logger.log(`Payment ${providerPaymentId} approved for order ${payment.order_id}`);
+      this.logger.log(
+        `Payment ${payment.provider_payment_id} approved for order ${payment.order_id}`,
+      );
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -207,10 +230,15 @@ export class PaymentsService {
     }
   }
 
-  async rejectByProviderPaymentId(providerPaymentId: string): Promise<void> {
-    const payment = await this.paymentRepository.findOne({
-      where: { provider_payment_id: providerPaymentId },
-    });
+  async rejectByProviderPaymentId(
+    providerPaymentId: string,
+    providerInstallmentId?: string,
+  ): Promise<void> {
+    const payment = await this.findPaymentForProviderEvent(
+      this.paymentRepository.manager,
+      providerPaymentId,
+      providerInstallmentId,
+    );
 
     if (!payment) {
       throw new NotFoundException(
@@ -219,7 +247,12 @@ export class PaymentsService {
     }
 
     if (payment.status === 'approved') {
-      this.logger.warn(`Cannot reject already approved payment ${providerPaymentId}`);
+      this.logger.warn(
+        `Cannot reject already approved payment ${payment.provider_payment_id}` +
+          (providerPaymentId !== payment.provider_payment_id
+            ? ` — ignoring related installment ${providerPaymentId}`
+            : ''),
+      );
       return;
     }
 
@@ -230,6 +263,52 @@ export class PaymentsService {
       payment_status: 'failed',
     });
 
-    this.logger.log(`Payment ${providerPaymentId} marked as failed for order ${payment.order_id}`);
+    this.logger.log(
+      `Payment ${payment.provider_payment_id} marked as failed for order ${payment.order_id}`,
+    );
+  }
+
+  private async findPaymentForProviderEvent(
+    manager: EntityManager,
+    providerPaymentId: string,
+    providerInstallmentId?: string,
+  ): Promise<Payment | null> {
+    const byPaymentId = await manager.findOne(Payment, {
+      where: { provider_payment_id: providerPaymentId },
+    });
+    if (byPaymentId) {
+      return byPaymentId;
+    }
+
+    if (!providerInstallmentId) {
+      return null;
+    }
+
+    const byInstallmentId = await manager.findOne(Payment, {
+      where: { provider_installment_id: providerInstallmentId },
+    });
+    if (byInstallmentId) {
+      return byInstallmentId;
+    }
+
+    const relatedIds =
+      await this.paymentGateway.listInstallmentPaymentIds(providerInstallmentId);
+    if (relatedIds.length === 0) {
+      return null;
+    }
+
+    const related = await manager.findOne(Payment, {
+      where: { provider_payment_id: In(relatedIds) },
+    });
+
+    if (related && !related.provider_installment_id) {
+      related.provider_installment_id = providerInstallmentId;
+      await manager.save(related);
+      this.logger.log(
+        `Backfilled provider_installment_id ${providerInstallmentId} for payment ${related.provider_payment_id}`,
+      );
+    }
+
+    return related;
   }
 }

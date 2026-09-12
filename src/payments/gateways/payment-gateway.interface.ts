@@ -45,11 +45,14 @@ export interface PixPaymentResult {
 
 export interface CardPaymentResult {
   providerPaymentId: string;
+  providerInstallmentId?: string;
   status: 'processing' | 'approved' | 'rejected';
 }
 
 export interface WebhookEvent {
   providerPaymentId: string;
+  providerInstallmentId?: string;
+  installmentNumber?: number;
   status: 'approved' | 'rejected' | 'failed';
   rawPayload: Record<string, unknown>;
 }
@@ -66,4 +69,5 @@ export interface PaymentGateway {
   checkPaymentStatus(providerPaymentId: string): Promise<PaymentStatusResult>;
   verifyWebhookSignature(payload: unknown, signature: string): boolean;
   parseWebhookEvent(payload: unknown): WebhookEvent;
+  listInstallmentPaymentIds(installmentId: string): Promise<string[]>;
 }

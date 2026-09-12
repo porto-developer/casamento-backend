@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS payments (
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   provider VARCHAR(50) NOT NULL,
   provider_payment_id VARCHAR(255) NOT NULL,
+  provider_installment_id VARCHAR(255),
   method VARCHAR(20) NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
   installments INTEGER NOT NULL DEFAULT 1,
@@ -74,3 +75,5 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(payment_status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+CREATE INDEX IF NOT EXISTS idx_payments_provider_payment_id ON payments(provider_payment_id);
+CREATE INDEX IF NOT EXISTS idx_payments_provider_installment_id ON payments(provider_installment_id);

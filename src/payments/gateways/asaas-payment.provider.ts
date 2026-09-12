@@ -19,6 +19,8 @@ interface AsaasPaymentResponse {
   id: string;
   status: string;
   dueDate: string;
+  installment?: string;
+  installmentNumber?: number;
   creditCard?: {
     creditCardNumber: string;
     creditCardBrand: string;
@@ -186,7 +188,9 @@ export class AsaasPaymentProvider implements PaymentGateway {
     );
 
     this.logger.log(
-      `Card payment created: ${payment.id} — status: ${payment.status} — installments: ${installments}`,
+      `Card payment created: ${payment.id} — status: ${payment.status} — installments: ${installments}${
+        payment.installment ? ` — installment: ${payment.installment}` : ''
+      }`,
     );
 
     const statusMap: Record<string, 'processing' | 'approved' | 'rejected'> = {
@@ -199,6 +203,7 @@ export class AsaasPaymentProvider implements PaymentGateway {
 
     return {
       providerPaymentId: payment.id,
+      providerInstallmentId: payment.installment,
       status: statusMap[payment.status] || 'processing',
     };
   }
@@ -233,8 +238,22 @@ export class AsaasPaymentProvider implements PaymentGateway {
 
     return {
       providerPaymentId: (paymentData?.id as string) || '',
+      providerInstallmentId: (paymentData?.installment as string) || undefined,
+      installmentNumber:
+        typeof paymentData?.installmentNumber === 'number'
+          ? paymentData.installmentNumber
+          : undefined,
       status: statusMap[event] || 'failed',
       rawPayload: body,
     };
+  }
+
+  async listInstallmentPaymentIds(installmentId: string): Promise<string[]> {
+    const response = await this.request<{ data: { id: string }[] }>(
+      'GET',
+      `/installments/${installmentId}/payments?limit=100`,
+    );
+
+    return (response.data ?? []).map((payment) => payment.id);
   }
 }

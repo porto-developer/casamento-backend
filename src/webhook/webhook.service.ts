@@ -33,13 +33,21 @@ export class WebhookService {
     }
 
     this.logger.log(
-      `Webhook received: ${event.providerPaymentId} -> ${event.status}`,
+      `Webhook received: ${event.providerPaymentId} -> ${event.status}` +
+        (event.providerInstallmentId
+          ? ` (installment ${event.providerInstallmentId}` +
+            (event.installmentNumber
+              ? `, parcela ${event.installmentNumber}`
+              : '') +
+            ')'
+          : ''),
     );
 
     switch (event.status) {
       case 'approved':
         await this.paymentsService.approveByProviderPaymentId(
           event.providerPaymentId,
+          event.providerInstallmentId,
         );
         break;
 
@@ -47,6 +55,7 @@ export class WebhookService {
       case 'failed':
         await this.paymentsService.rejectByProviderPaymentId(
           event.providerPaymentId,
+          event.providerInstallmentId,
         );
         break;
 

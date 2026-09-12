@@ -98,6 +98,7 @@ export class OrdersService {
 
       let paymentResult: {
         providerPaymentId: string;
+        providerInstallmentId?: string;
         pixQrCode?: string | null;
         pixCopyPaste?: string | null;
         expiresAt?: Date | null;
@@ -154,6 +155,7 @@ export class OrdersService {
         });
         paymentResult = {
           providerPaymentId: cardResult.providerPaymentId,
+          providerInstallmentId: cardResult.providerInstallmentId,
           status: cardResult.status,
           installments,
         };
@@ -165,6 +167,7 @@ export class OrdersService {
         order_id: savedOrder.id,
         provider,
         provider_payment_id: paymentResult.providerPaymentId,
+        provider_installment_id: paymentResult.providerInstallmentId || null,
         method: dto.payment_method,
         amount: total,
         installments: paymentResult.installments ?? 1,
